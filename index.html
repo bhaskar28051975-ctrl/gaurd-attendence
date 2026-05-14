@@ -1,1 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>GuardAttend – Digital Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0F4F8;--navy:#0D1B2A;--navy2:#1B2E45;--navy3:#243B55;
+  --teal:#0BA4A4;--teal2:#09C4C4;--orange:#F76B1C;
+  --green:#1DBF73;--red:#E74C3C;--amber:#F39C12;
+  --white:#FFF;--border:#E2EAF0;--text:#0D1B2A;--text2:#5A7184;
+  --radius:18px;--shadow:0 4px 20px rgba(13,27,42,0.08);
+}
+html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+.shell{max-width:430px;min-height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;position:relative}
 
+/* HEADER */
+.header{background:linear-gradient(150deg,var(--navy) 0%,var(--navy3) 100%);padding:50px 20px 28px;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:radial-gradient(circle,rgba(11,164,164,0.2) 0%,transparent 70%);border-radius:50%}
+.header::after{content:'';position:absolute;bottom:-40px;left:20px;width:130px;height:130px;background:radial-gradient(circle,rgba(247,107,28,0.12) 0%,transparent 70%);border-radius:50%}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
+.app-brand{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:var(--white)}
+.app-sub{font-size:12px;color:#94A3B8;margin-top:3px}
+.date-big{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--white);text-align:right}
+.date-small{font-size:11px;color:#64748B;margin-top:2px;text-align:right}
+.profile-card{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px 16px;margin-top:18px;display:flex;align-items:center;gap:14px;position:relative;z-index:1;cursor:pointer;transition:background 0.2s}
+.profile-card:hover{background:rgba(255,255,255,0.13)}
+.profile-avatar{width:52px;height:52px;border-radius:14px;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:18px;font-weight:800;color:var(--teal);border:2px solid var(--teal);flex-shrink:0}
+.profile-name{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-site{font-size:12px;color:#94A3B8;margin-top:2px}
+.profile-salary{font-size:11px;color:var(--teal);margin-top:3px;font-weight:600}
+.switch-btn{font-size:11px;color:var(--teal);background:rgba(11,164,164,0.15);border:1px solid rgba(11,164,164,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap;font-family:'Nunito',sans-serif;font-weight:700}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;position:relative;z-index:1}
+.stat-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 8px;text-align:center}
+.stat-val{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;line-height:1}
+.stat-lbl{font-size:10px;color:#94A3B8;margin-top:4px;font-weight:600}
+.c-green{color:var(--green)}.c-amber{color:var(--amber)}.c-teal{color:var(--teal2)}
+
+/* TABS */
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--border);padding:0 8px;flex-shrink:0}
+.tab-btn{flex:1;padding:13px 2px;border:none;background:transparent;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:#94A3B8;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:3px}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding-bottom:90px}
+.content::-webkit-scrollbar{width:0}
+
+/* ATTENDANCE */
+.attend-wrap{padding:16px}
+.section-title{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
+.status-card{background:var(--white);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.status-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-present{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot-absent{background:#CBD5E1}
+.status-text{font-family:'Sora',sans-serif;font-size:14px;font-weight:700}
+.status-time{font-size:12px;color:var(--text2);margin-left:auto}
+.loc-row{display:flex;align-items:center;gap:8px;background:#F0F9FF;border-radius:12px;padding:10px 14px;margin-bottom:12px;border:1px solid #BAE6FD}
+.loc-text{font-size:12px;color:#0369A1;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.loc-btn{font-size:11px;color:var(--teal);background:none;border:none;cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;white-space:nowrap}
+.selfie-area{border:2px dashed var(--border);border-radius:14px;overflow:hidden;background:#F8FAFC;margin-bottom:14px}
+.selfie-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:8px;cursor:pointer}
+.selfie-placeholder .sicon{font-size:36px}
+.selfie-placeholder .slbl{font-size:13px;font-weight:600;color:var(--text2)}
+.selfie-placeholder .ssub{font-size:11px;color:#CBD5E1}
+#selfiePreview{width:100%;max-height:220px;object-fit:cover;display:none}
+#cameraStream{width:100%;max-height:220px;object-fit:cover;display:none}
+.selfie-actions{display:none;gap:8px;padding:10px}
+.btn-capture{flex:1;padding:10px;border:none;border-radius:12px;background:var(--teal);color:var(--white);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-retake{flex:1;padding:10px;border:none;border-radius:12px;background:#F1F5F9;color:var(--text2);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.colleague-wrap{background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.colleague-title{font-size:12px;font-weight:700;color:#C2410C;margin-bottom:8px}
+.colleague-input{width:100%;border:1.5px solid #FED7AA;border-radius:10px;padding:9px 12px;font-family:'Nunito',sans-serif;font-size:13px;color:var(--text);outline:none;background:var(--white)}
+.colleague-input:focus{border-color:var(--orange)}
+.mark-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--teal),#06B6D4);color:var(--white);border:none;border-radius:16px;font-family:'Sora',sans-serif;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(11,164,164,0.35);transition:opacity 0.2s}
+.mark-btn:hover{opacity:0.9}
+.mark-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* TODAY LOG */
+.log-wrap{padding:16px}
+.log-card{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;animation:slideUp 0.3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.log-avatar{width:44px;height:44px;border-radius:12px;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0}
+.log-name{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.log-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.log-loc{font-size:11px;color:#0369A1;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.log-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.badge-present{background:#DCFCE7;color:#166534}
+.badge-absent{background:#F1F5F9;color:#64748B}
+
+/* REPORTS */
+.report-wrap{padding:16px}
+.rf-row{display:flex;gap:8px;margin-bottom:12px}
+.rf-btn{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all 0.2s}
+.rf-btn.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.sel{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--text);outline:none;background:var(--white);margin-bottom:12px}
+.sel:focus{border-color:var(--teal)}
+.salary-card{background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border-radius:var(--radius);padding:20px;margin-bottom:14px;color:var(--white)}
+.sg-name{font-family:'Sora',sans-serif;font-size:16px;font-weight:800;margin-bottom:3px}
+.sg-period{font-size:12px;color:#94A3B8;margin-bottom:16px}
+.sal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sal-lbl{font-size:11px;color:#94A3B8;font-weight:600;margin-bottom:3px}
+.sal-val{font-family:'Sora',sans-serif;font-size:18px;font-weight:800}
+.cv-white{color:#fff}.cv-teal{color:var(--teal2)}.cv-green{color:#4ADE80}.cv-orange{color:var(--orange)}
+.cal-wrap{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.cal-title{font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dh{font-size:10px;font-weight:700;color:var(--text2);text-align:center;padding:4px 0}
+.cal-d{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.cal-present{background:#DCFCE7;color:#166534}
+.cal-absent{background:#F1F5F9;color:#CBD5E1}
+.cal-today{outline:2px solid var(--teal);outline-offset:1px}
+.pdf-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--orange),#E8550A);color:var(--white);border:none;border-radius:16px;font-family:'Sora',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(247,107,28,0.35);display:flex;align-items:center;justify-content:center;gap:8px}
+.pdf-btn:hover{opacity:0.9}
+
+/* GUARDS */
+.guards-wrap{padding:16px}
+.add-btn{width:100%;padding:13px;background:var(--white);border:2px dashed var(--teal);border-radius:var(--radius);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--teal);cursor:pointer;margin-bottom:14px;transition:background 0.2s}
+.add-btn:hover{background:#F0FDFD}
+.guard-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.guard-av{width:46px;height:46px;border-radius:13px;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:16px;font-weight:800;color:var(--teal);flex-shrink:0}
+.guard-name{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.guard-site{font-size:12px;color:var(--text2);margin-top:2px}
+.guard-sal{font-size:12px;color:var(--teal);font-weight:700;margin-top:2px}
+.ga-btns{display:flex;gap:6px;flex-shrink:0}
+.btn-sm{padding:6px 9px;border-radius:10px;border:none;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer}
+.btn-sel{background:#DCFCE7;color:#166534}
+.btn-edit{background:#EFF6FF;color:#1D4ED8}
+.btn-del{background:#FEF2F2;color:var(--red)}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--white);border-top:1px solid var(--border);display:flex;padding:10px 0 20px;z-index:40}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.nav-icon{font-size:20px}
+.nav-lbl{font-size:10px;font-weight:700;color:#CBD5E1}
+.nav-item.active .nav-lbl{color:var(--teal)}
+.nav-dot{width:4px;height:4px;background:var(--teal);border-radius:50%}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(13,27,42,0.75);display:flex;align-items:flex-end;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.overlay.open{opacity:1;pointer-events:all}
+.sheet{background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;transform:translateY(100%);transition:transform 0.35s cubic-bezier(.32,.72,0,1);max-height:92dvh;overflow-y:auto}
+.overlay.open .sheet{transform:translateY(0)}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.mtitle{font-family:'Sora',sans-serif;font-size:18px;font-weight:800;color:var(--text)}
+.mclose{width:32px;height:32px;background:#F1F5F9;border:none;border-radius:10px;cursor:pointer;font-size:16px}
+.fld{margin-bottom:14px}
+.flbl{font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.finput{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--text);outline:none;background:var(--white);transition:border-color 0.2s}
+.finput:focus{border-color:var(--teal)}
+.sbtn{width:100%;padding:15px;background:linear-gradient(135deg,var(--teal),#06B6D4);color:var(--white);border:none;border-radius:16px;font-family:'Sora',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px}
+
+/* TOAST */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--navy2);color:var(--white);padding:12px 20px;border-radius:14px;font-size:13px;font-weight:600;border:1px solid #334155;box-shadow:0 8px 24px rgba(0,0,0,0.25);z-index:300;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.3s;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:40px 20px;color:#CBD5E1}
+.empty .ei{font-size:40px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-brand">🛡️ GuardAttend</div>
+      <div class="app-sub">Digital Attendance Register</div>
+    </div>
+    <div>
+      <div class="date-big" id="clockDisplay">--:--</div>
+      <div class="date-small" id="dateDisplay">--</div>
+    </div>
+  </div>
+  <div class="profile-card" onclick="switchTab('guards')">
+    <div class="profile-avatar" id="hAvatar">--</div>
+    <div style="flex:1;min-width:0">
+      <div class="profile-name" id="hName">Select Guard</div>
+      <div class="profile-site" id="hSite">Tap to select a guard</div>
+      <div class="profile-salary" id="hSalary"></div>
+    </div>
+    <div class="switch-btn">Switch ▾</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-val c-green" id="sPres">0</div><div class="stat-lbl">Present</div></div>
+    <div class="stat-box"><div class="stat-val c-amber" id="sAbs">0</div><div class="stat-lbl">Absent</div></div>
+    <div class="stat-box"><div class="stat-val c-teal" id="sEarn">₹0</div><div class="stat-lbl">Earned</div></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" id="t0" onclick="switchTab('attend')">📍 Attend</button>
+  <button class="tab-btn" id="t1" onclick="switchTab('log')">📋 Log</button>
+  <button class="tab-btn" id="t2" onclick="switchTab('report')">📊 Report</button>
+  <button class="tab-btn" id="t3" onclick="switchTab('guards')">👮 Guards</button>
+</div>
+
+<div class="content">
+
+  <!-- ATTENDANCE -->
+  <div id="pAttend" class="attend-wrap">
+    <div class="section-title">Mark Today's Attendance</div>
+    <div class="status-card">
+      <div class="status-row">
+        <div class="status-dot dot-absent" id="sDot"></div>
+        <div class="status-text" id="sTxt">Not Marked Yet</div>
+        <div class="status-time" id="sTime"></div>
+      </div>
+      <div class="loc-row">
+        <span style="font-size:18px">📍</span>
+        <span class="loc-text" id="locTxt">Location not captured</span>
+        <button class="loc-btn" onclick="getLocation()">Get GPS 🔄</button>
+      </div>
+      <div class="selfie-area" id="selfieArea">
+        <div class="selfie-placeholder" id="sPlaceholder" onclick="startCamera()">
+          <div class="sicon">🤳</div>
+          <div class="slbl">Tap to take Selfie</div>
+          <div class="ssub">Photo with colleague required</div>
+        </div>
+        <video id="cameraStream" autoplay playsinline></video>
+        <img id="selfiePreview" alt="Selfie"/>
+        <div class="selfie-actions" id="selfieActions">
+          <button class="btn-capture" onclick="captureSelfie()">📸 Capture</button>
+          <button class="btn-retake" onclick="retakePhoto()">🔄 Retake</button>
+        </div>
+      </div>
+      <div class="colleague-wrap">
+        <div class="colleague-title">👥 Colleague / Co-worker Name</div>
+        <input class="colleague-input" id="colleagueInput" placeholder="Enter colleague's name present with you…"/>
+      </div>
+      <button class="mark-btn" id="markBtn" onclick="markAttendance()">✅ Mark Present</button>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="pLog" style="display:none" class="log-wrap">
+    <div style="padding-bottom:10px;font-family:'Sora',sans-serif;font-size:14px;font-weight:700">Today's Attendance Log</div>
+    <div id="logCards"></div>
+  </div>
+
+  <!-- REPORT -->
+  <div id="pReport" style="display:none" class="report-wrap">
+    <div class="rf-row">
+      <button class="rf-btn active" id="rfG" onclick="setRF('guard')">By Guard</button>
+      <button class="rf-btn" id="rfM" onclick="setRF('month')">All Guards</button>
+    </div>
+    <select class="sel" id="rMonth" onchange="renderReport()"></select>
+    <select class="sel" id="rGuard" onchange="renderReport()"></select>
+    <div id="rContent"></div>
+    <button class="pdf-btn" onclick="downloadPDF()">📄 Download PDF Report</button>
+  </div>
+
+  <!-- GUARDS -->
+  <div id="pGuards" style="display:none" class="guards-wrap">
+    <button class="add-btn" onclick="openGModal()">+ Add New Guard</button>
+    <div id="guardCards"></div>
+  </div>
+
+</div>
+</div><!-- /shell -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="n0" onclick="switchTab('attend')"><span class="nav-icon">📍</span><span class="nav-lbl">Attend</span><div class="nav-dot"></div></div>
+  <div class="nav-item" id="n1" onclick="switchTab('log')"><span class="nav-icon">📋</span><span class="nav-lbl">Log</span></div>
+  <div class="nav-item" id="n2" onclick="switchTab('report')"><span class="nav-icon">📊</span><span class="nav-lbl">Reports</span></div>
+  <div class="nav-item" id="n3" onclick="switchTab('guards')"><span class="nav-icon">👮</span><span class="nav-lbl">Guards</span></div>
+</div>
+
+<!-- GUARD MODAL -->
+<div class="overlay" id="gModal" onclick="if(event.target===this)closeGModal()">
+  <div class="sheet">
+    <div class="mhdr">
+      <span class="mtitle" id="gModalTitle">Add New Guard</span>
+      <button class="mclose" onclick="closeGModal()">✕</button>
+    </div>
+    <div class="fld"><label class="flbl">Full Name *</label><input class="finput" id="gName" placeholder="Guard's full name"/></div>
+    <div class="fld"><label class="flbl">Phone Number</label><input class="finput" id="gPhone" placeholder="e.g. 9876543210" type="tel"/></div>
+    <div class="fld"><label class="flbl">Site / Post Location *</label><input class="finput" id="gSite" placeholder="e.g. Sunrise CHS Gate 1, Andheri"/></div>
+    <div class="fld"><label class="flbl">Monthly Salary (₹) *</label><input class="finput" id="gSalary" placeholder="e.g. 12000" type="number"/></div>
+    <div class="fld"><label class="flbl">Employee ID</label><input class="finput" id="gEmpId" placeholder="e.g. GRD-001"/></div>
+    <button class="sbtn" onclick="saveGuard()">💾 Save Guard</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+
+let guards=LS.get('ga2_guards')||[];
+let attendance=LS.get('ga2_att')||{};
+let activeGId=LS.get('ga2_active')||null;
+let capturedSelfie=null,capturedLoc='',capturedLat=null,capturedLng=null;
+let editingGId=null,cameraStream=null;
+
+// Seed demo data
+if(!guards.length){
+  guards=[
+    {id:'g1',name:'Ramesh Patil',phone:'9876543210',site:'Sunrise CHS – Andheri W',salary:12000,empId:'GRD-001'},
+    {id:'g2',name:'Suresh Jadhav',phone:'9823456789',site:'Greenpark Society – Thane',salary:13500,empId:'GRD-002'},
+    {id:'g3',name:'Dinesh Sharma',phone:'9011223344',site:'BlueBell Apts – Borivali',salary:11500,empId:'GRD-003'},
+  ];
+  LS.set('ga2_guards',guards);
+  activeGId='g1'; LS.set('ga2_active',activeGId);
+  const now=new Date(),yr=now.getFullYear(),mo=now.getMonth();
+  for(let d=1;d<now.getDate();d++){
+    const dt=new Date(yr,mo,d).toISOString().split('T')[0];
+    if(!attendance[dt])attendance[dt]={};
+    guards.forEach(g=>{if(Math.random()>0.15)attendance[dt][g.id]={status:'present',time:'0'+(8+Math.floor(Math.random()*2))+':'+String(Math.floor(Math.random()*50)+5).padStart(2,'0')+' AM',loc:'Mumbai, Maharashtra',selfie:null,colleague:''};});
+  }
+  LS.set('ga2_att',attendance);
+}
+
+// Clock
+function tick(){
+  const n=new Date();
+  document.getElementById('clockDisplay').textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('dateDisplay').textContent=n.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+}
+tick(); setInterval(tick,1000);
+
+function daysInMonth(yr,mo){return new Date(yr,mo+1,0).getDate();}
+function getAG(){return guards.find(g=>g.id===activeGId)||null;}
+function initials(n){return n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();}
+
+function countPresent(gId,yr,mo){
+  let c=0;const days=daysInMonth(yr,mo),today=new Date();
+  for(let d=1;d<=days;d++){
+    const dt=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if(new Date(yr,mo,d)>today)break;
+    if(attendance[dt]&&attendance[dt][gId]&&attendance[dt][gId].status==='present')c++;
+  }
+  return c;
+}
+
+function refreshHeader(){
+  const g=getAG();
+  if(!g){document.getElementById('hAvatar').textContent='--';document.getElementById('hName').textContent='Select Guard';document.getElementById('hSite').textContent='Tap to select';document.getElementById('hSalary').textContent='';document.getElementById('sPres').textContent='0';document.getElementById('sAbs').textContent='0';document.getElementById('sEarn').textContent='₹0';return;}
+  document.getElementById('hAvatar').textContent=initials(g.name);
+  document.getElementById('hName').textContent=g.name;
+  document.getElementById('hSite').textContent=g.site;
+  const n=new Date(),yr=n.getFullYear(),mo=n.getMonth(),days=daysInMonth(yr,mo);
+  document.getElementById('hSalary').textContent=`₹${g.salary.toLocaleString('en-IN')}/mo  •  ₹${Math.round(g.salary/days)}/day (${days} days)`;
+  const pres=countPresent(g.id,yr,mo),elapsed=n.getDate()-1;
+  document.getElementById('sPres').textContent=pres;
+  document.getElementById('sAbs').textContent=Math.max(0,elapsed-pres);
+  document.getElementById('sEarn').textContent='₹'+Math.round((g.salary/days)*pres).toLocaleString('en-IN');
+}
+
+// Tabs
+const TABS={attend:{p:'pAttend',t:'t0',n:'n0'},log:{p:'pLog',t:'t1',n:'n1'},report:{p:'pReport',t:'t2',n:'n2'},guards:{p:'pGuards',t:'t3',n:'n3'}};
+function switchTab(tab){
+  Object.entries(TABS).forEach(([k,v])=>{
+    document.getElementById(v.p).style.display=k===tab?'':'none';
+    document.getElementById(v.t).classList.toggle('active',k===tab);
+    const ni=document.getElementById(v.n);
+    ni.classList.toggle('active',k===tab);
+    const dot=ni.querySelector('.nav-dot');
+    if(k===tab&&!dot){const d=document.createElement('div');d.className='nav-dot';ni.appendChild(d);}
+    if(k!==tab&&dot)dot.remove();
+  });
+  if(tab==='log')renderLog();
+  if(tab==='report')initReport();
+  if(tab==='guards')renderGuards();
+}
+
+// Attendance Tab
+function refreshAttend(){
+  const g=getAG();
+  if(!g){document.getElementById('markBtn').disabled=true;return;}
+  document.getElementById('markBtn').disabled=false;
+  const today=new Date().toISOString().split('T')[0];
+  const rec=attendance[today]&&attendance[today][g.id];
+  if(rec&&rec.status==='present'){
+    document.getElementById('sDot').className='status-dot dot-present';
+    document.getElementById('sTxt').textContent='Present ✅';
+    document.getElementById('sTime').textContent='Marked at '+rec.time;
+    document.getElementById('markBtn').disabled=true;
+    document.getElementById('markBtn').textContent='✅ Already Marked';
+    if(rec.loc)document.getElementById('locTxt').textContent='📍 '+rec.loc;
+    if(rec.colleague)document.getElementById('colleagueInput').value=rec.colleague;
+    if(rec.selfie){document.getElementById('selfiePreview').src=rec.selfie;document.getElementById('selfiePreview').style.display='block';document.getElementById('sPlaceholder').style.display='none';}
+  }else{
+    document.getElementById('sDot').className='status-dot dot-absent';
+    document.getElementById('sTxt').textContent='Not Marked Yet';
+    document.getElementById('sTime').textContent='';
+    document.getElementById('markBtn').disabled=false;
+    document.getElementById('markBtn').textContent='✅ Mark Present';
+  }
+}
+
+// GPS
+function getLocation(){
+  document.getElementById('locTxt').textContent='Getting location… 🔄';
+  if(!navigator.geolocation){document.getElementById('locTxt').textContent='GPS not supported';return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    capturedLat=pos.coords.latitude;capturedLng=pos.coords.longitude;
+    capturedLoc=`Lat: ${capturedLat.toFixed(5)}, Lng: ${capturedLng.toFixed(5)}`;
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${capturedLat}&lon=${capturedLng}&format=json`)
+      .then(r=>r.json()).then(d=>{
+        const a=d.address||{};
+        capturedLoc=[a.suburb||a.neighbourhood||'',a.city||a.town||'',a.state||''].filter(Boolean).join(', ')||capturedLoc;
+        document.getElementById('locTxt').textContent='📍 '+capturedLoc;
+      }).catch(()=>document.getElementById('locTxt').textContent='📍 '+capturedLoc);
+  },()=>document.getElementById('locTxt').textContent='Location denied – please allow GPS');
+}
+
+// Camera
+function startCamera(){
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false})
+    .then(s=>{
+      cameraStream=s;
+      const v=document.getElementById('cameraStream');v.srcObject=s;v.style.display='block';
+      document.getElementById('sPlaceholder').style.display='none';
+      document.getElementById('selfieActions').style.display='flex';
+    }).catch(()=>showToast('⚠️ Camera access denied'));
+}
+function captureSelfie(){
+  const v=document.getElementById('cameraStream');
+  const c=document.createElement('canvas');c.width=v.videoWidth||320;c.height=v.videoHeight||240;
+  c.getContext('2d').drawImage(v,0,0);
+  capturedSelfie=c.toDataURL('image/jpeg',0.7);
+  const p=document.getElementById('selfiePreview');p.src=capturedSelfie;p.style.display='block';
+  v.style.display='none';
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  showToast('📸 Selfie captured!');
+}
+function retakePhoto(){
+  capturedSelfie=null;
+  document.getElementById('selfiePreview').style.display='none';
+  document.getElementById('cameraStream').style.display='none';
+  document.getElementById('selfieActions').style.display='none';
+  document.getElementById('sPlaceholder').style.display='flex';
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  startCamera();
+}
+
+// Mark
+function markAttendance(){
+  const g=getAG();
+  if(!g){showToast('⚠️ Select a guard first');switchTab('guards');return;}
+  if(!capturedSelfie){showToast('⚠️ Please take a selfie first');return;}
+  if(!capturedLoc){showToast('⚠️ Please capture GPS location first');return;}
+  const today=new Date().toISOString().split('T')[0];
+  const now=new Date();
+  if(!attendance[today])attendance[today]={};
+  attendance[today][g.id]={status:'present',time:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),loc:capturedLoc,selfie:capturedSelfie,colleague:document.getElementById('colleagueInput').value.trim(),lat:capturedLat,lng:capturedLng};
+  LS.set('ga2_att',attendance);
+  refreshHeader();refreshAttend();
+  showToast('✅ Attendance marked for '+g.name+'!');
+}
+
+// Log
+function renderLog(){
+  const today=new Date().toISOString().split('T')[0];
+  const wrap=document.getElementById('logCards');
+  if(!guards.length){wrap.innerHTML='<div class="empty"><div class="ei">👮</div>No guards added yet</div>';return;}
+  wrap.innerHTML=guards.map(g=>{
+    const rec=attendance[today]&&attendance[today][g.id];
+    const ok=rec&&rec.status==='present';
+    return `<div class="log-card">
+      <div class="log-avatar">${initials(g.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="log-name">${g.name}</div>
+        <div class="log-meta">${g.site}${ok?' • ⏰ '+rec.time:''}</div>
+        ${ok?`<div class="log-loc">📍 ${rec.loc||'—'}${rec.colleague?' • 👥 '+rec.colleague:''}</div>`:''}
+      </div>
+      <span class="log-badge ${ok?'badge-present':'badge-absent'}">${ok?'Present':'Absent'}</span>
+    </div>`;
+  }).join('');
+}
+
+// Report
+let rfMode='guard';
+function setRF(m){rfMode=m;document.getElementById('rfG').classList.toggle('active',m==='guard');document.getElementById('rfM').classList.toggle('active',m==='month');renderReport();}
+
+function initReport(){
+  const mSel=document.getElementById('rMonth'),gSel=document.getElementById('rGuard');
+  const now=new Date();
+  mSel.innerHTML='';
+  for(let i=0;i<6;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    mSel.innerHTML+=`<option value="${val}" ${i===0?'selected':''}>${d.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</option>`;
+  }
+  gSel.innerHTML=guards.map(g=>`<option value="${g.id}">${g.name} – ${g.site}</option>`).join('');
+  if(activeGId)gSel.value=activeGId;
+  renderReport();
+}
+
+function renderReport(){
+  const mVal=document.getElementById('rMonth').value;
+  if(!mVal)return;
+  const [yr,mo]=mVal.split('-').map(Number),moIdx=mo-1;
+  const days=daysInMonth(yr,moIdx);
+  const gId=document.getElementById('rGuard').value;
+  const g=guards.find(x=>x.id===gId);
+  if(!g){document.getElementById('rContent').innerHTML='<div class="empty"><div class="ei">👮</div>Select a guard</div>';return;}
+  const daily=g.salary/days;
+  let pres=0;
+  const firstDay=new Date(yr,moIdx,1).getDay();
+  let cells='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>cells+=`<div class="cal-dh">${d}</div>`);
+  for(let i=0;i<firstDay;i++)cells+=`<div class="cal-d"></div>`;
+  const todayStr=new Date().toISOString().split('T')[0];
+  for(let d=1;d<=days;d++){
+    const dt=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ok=attendance[dt]&&attendance[dt][gId]&&attendance[dt][gId].status==='present';
+    if(ok)pres++;
+    const isToday=dt===todayStr;
+    cells+=`<div class="cal-d ${ok?'cal-present':'cal-absent'} ${isToday?'cal-today':''}">${d}</div>`;
+  }
+  const absent=days-pres,earned=Math.round(daily*pres),ded=Math.round(daily*absent);
+  const mName=new Date(yr,moIdx,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  document.getElementById('rContent').innerHTML=`
+    <div class="salary-card">
+      <div class="sg-name">👮 ${g.name}</div>
+      <div class="sg-period">${g.site} • ${mName} (${days} calendar days)</div>
+      <div class="sal-grid">
+        <div><div class="sal-lbl">Monthly Salary</div><div class="sal-val cv-white">₹${g.salary.toLocaleString('en-IN')}</div></div>
+        <div><div class="sal-lbl">Daily Wage</div><div class="sal-val cv-teal">₹${Math.round(daily)}/day</div></div>
+        <div><div class="sal-lbl">Days Present</div><div class="sal-val cv-green">${pres}</div></div>
+        <div><div class="sal-lbl">Days Absent</div><div class="sal-val cv-orange">${absent}</div></div>
+        <div><div class="sal-lbl">Amount Earned</div><div class="sal-val cv-green">₹${earned.toLocaleString('en-IN')}</div></div>
+        <div><div class="sal-lbl">Deduction</div><div class="sal-val cv-orange">₹${ded.toLocaleString('en-IN')}</div></div>
+      </div>
+    </div>
+    <div class="cal-wrap">
+      <div class="cal-title">📅 Attendance Calendar – ${mName}</div>
+      <div class="cal-grid">${cells}</div>
+      <div style="display:flex;gap:12px;margin-top:12px;font-size:11px;font-weight:700">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#DCFCE7;border-radius:4px;display:inline-block"></span> Present</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#F1F5F9;border-radius:4px;display:inline-block"></span> Absent</span>
+      </div>
+    </div>`;
+}
+
+// PDF
+function downloadPDF(){
+  const {jsPDF}=window.jspdf;
+  const mVal=document.getElementById('rMonth').value;
+  if(!mVal){showToast('⚠️ Select a month first');return;}
+  const [yr,mo]=mVal.split('-').map(Number),moIdx=mo-1,days=daysInMonth(yr,moIdx);
+  const gId=document.getElementById('rGuard').value,g=guards.find(x=>x.id===gId);
+  if(!g){showToast('⚠️ Select a guard first');return;}
+  const daily=g.salary/days;let pres=0;
+  const rows=[];
+  for(let d=1;d<=days;d++){
+    const dt=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const rec=attendance[dt]&&attendance[dt][gId];
+    const ok=rec&&rec.status==='present';
+    if(ok)pres++;
+    rows.push({dt:new Date(yr,moIdx,d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'}),ok,time:ok?rec.time:'—',loc:ok?(rec.loc||'—'):'—',col:ok?(rec.colleague||'—'):'—'});
+  }
+  const absent=days-pres,earned=Math.round(daily*pres),ded=Math.round(daily*absent);
+  const mName=new Date(yr,moIdx,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210;
+  // Header band
+  doc.setFillColor(13,27,42);doc.rect(0,0,W,42,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(18);doc.setFont('helvetica','bold');
+  doc.text('🛡️ GuardAttend – Attendance Report',W/2,13,{align:'center'});
+  doc.setFontSize(11);doc.setFont('helvetica','normal');
+  doc.text(`${g.name}   •   ${g.site}`,W/2,22,{align:'center'});
+  doc.text(`${mName}   |   Emp ID: ${g.empId||'—'}   |   📞 ${g.phone||'—'}`,W/2,30,{align:'center'});
+  doc.setTextColor(11,164,164);doc.setFontSize(9);
+  doc.text(`Daily Wage = Monthly Salary ÷ ${days} calendar days = ₹${Math.round(daily)}/day`,W/2,38,{align:'center'});
+  // Summary boxes
+  const boxes=[
+    {l:'Monthly Salary',v:'₹'+g.salary.toLocaleString('en-IN')},
+    {l:'Days Present',v:String(pres)+'/'+days},
+    {l:'Days Absent',v:String(absent)},
+    {l:'Daily Wage',v:'₹'+Math.round(daily)},
+    {l:'Amount Earned',v:'₹'+earned.toLocaleString('en-IN')},
+    {l:'Deduction',v:'₹'+ded.toLocaleString('en-IN')},
+  ];
+  const bw=30,bh=16,by=46,gap=3,bx=10;
+  boxes.forEach((b,i)=>{
+    const x=bx+i*(bw+gap);
+    doc.setFillColor(240,244,248);doc.roundedRect(x,by,bw,bh,3,3,'F');
+    doc.setTextColor(90,113,132);doc.setFontSize(6.5);doc.setFont('helvetica','normal');
+    doc.text(b.l,x+bw/2,by+5,{align:'center'});
+    doc.setTextColor(13,27,42);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text(b.v,x+bw/2,by+12,{align:'center'});
+  });
+  // Table
+  let y=70;
+  doc.setFillColor(13,27,42);doc.rect(10,y,W-20,8,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('Date',14,y+5.5);doc.text('Status',52,y+5.5);doc.text('Time In',82,y+5.5);doc.text('Location',105,y+5.5);doc.text('Colleague',165,y+5.5);
+  y+=8;
+  rows.forEach((r,i)=>{
+    if(y>272){doc.addPage();y=15;}
+    doc.setFillColor(i%2===0?255:248,i%2===0?255:250,i%2===0?255:252);doc.rect(10,y,W-20,7,'F');
+    doc.setTextColor(13,27,42);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+    doc.text(r.dt,14,y+5);
+    if(r.ok){doc.setFillColor(220,252,231);doc.roundedRect(49,y+1,20,5,2,2,'F');doc.setTextColor(22,101,52);}
+    else{doc.setFillColor(241,245,249);doc.roundedRect(49,y+1,20,5,2,2,'F');doc.setTextColor(100,116,139);}
+    doc.text(r.ok?'Present':'Absent',59,y+5,{align:'center'});
+    doc.setTextColor(13,27,42);
+    doc.text(r.time,82,y+5);
+    doc.text(r.loc.length>35?r.loc.slice(0,33)+'…':r.loc,105,y+5);
+    doc.text(r.col.length>18?r.col.slice(0,16)+'…':r.col,165,y+5);
+    y+=7;
+  });
+  y+=6;
+  doc.setFillColor(13,27,42);doc.rect(10,y,W-20,10,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(8);
+  doc.text(`Generated on ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} | GuardAttend Digital Attendance`,W/2,y+6.5,{align:'center'});
+  doc.save(`GuardAttend_${g.name.replace(/ /g,'_')}_${mName.replace(/ /g,'_')}.pdf`);
+  showToast('📄 PDF downloaded!');
+}
+
+// Guards
+function renderGuards(){
+  const wrap=document.getElementById('guardCards');
+  if(!guards.length){wrap.innerHTML='<div class="empty"><div class="ei">👮</div>No guards added yet.</div>';return;}
+  wrap.innerHTML=guards.map(g=>`
+    <div class="guard-card">
+      <div class="guard-av">${initials(g.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="guard-name">${g.name} ${g.id===activeGId?'<span style="font-size:10px;background:#DCFCE7;color:#166534;padding:2px 7px;border-radius:10px;margin-left:4px">Active</span>':''}</div>
+        <div class="guard-site">📍 ${g.site}</div>
+        <div class="guard-sal">₹${g.salary.toLocaleString('en-IN')}/mo  •  ID: ${g.empId||'—'}  •  📞 ${g.phone||'—'}</div>
+      </div>
+      <div class="ga-btns">
+        <button class="btn-sm btn-sel" onclick="selGuard('${g.id}')">✅</button>
+        <button class="btn-sm btn-edit" onclick="openGModal('${g.id}')">✏️</button>
+        <button class="btn-sm btn-del" onclick="delGuard('${g.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function selGuard(id){
+  activeGId=id;LS.set('ga2_active',id);
+  refreshHeader();refreshAttend();renderGuards();
+  showToast('👮 Switched to '+guards.find(g=>g.id===id).name);
+  switchTab('attend');
+}
+
+function openGModal(id=null){
+  editingGId=id;
+  document.getElementById('gModalTitle').textContent=id?'Edit Guard':'Add New Guard';
+  if(id){const g=guards.find(x=>x.id===id);document.getElementById('gName').value=g.name;document.getElementById('gPhone').value=g.phone||'';document.getElementById('gSite').value=g.site;document.getElementById('gSalary').value=g.salary;document.getElementById('gEmpId').value=g.empId||'';}
+  else['gName','gPhone','gSite','gSalary','gEmpId'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('gModal').classList.add('open');
+}
+function closeGModal(){document.getElementById('gModal').classList.remove('open');editingGId=null;}
+
+function saveGuard(){
+  const name=document.getElementById('gName').value.trim();
+  const site=document.getElementById('gSite').value.trim();
+  const salary=parseFloat(document.getElementById('gSalary').value);
+  if(!name||!site||!salary){showToast('⚠️ Name, Site & Salary required');return;}
+  const obj={name,phone:document.getElementById('gPhone').value.trim(),site,salary,empId:document.getElementById('gEmpId').value.trim()};
+  if(editingGId){guards=guards.map(g=>g.id===editingGId?{...g,...obj}:g);showToast('✏️ Guard updated!');}
+  else{guards.push({id:'g'+Date.now(),...obj});showToast('✅ Guard added!');}
+  LS.set('ga2_guards',guards);closeGModal();renderGuards();refreshHeader();
+}
+
+function delGuard(id){
+  if(!confirm('Delete this guard?'))return;
+  guards=guards.filter(g=>g.id!==id);
+  LS.set('ga2_guards',guards);
+  if(activeGId===id){activeGId=guards[0]?.id||null;LS.set('ga2_active',activeGId);}
+  renderGuards();refreshHeader();showToast('🗑️ Guard removed');
+}
+
+// Toast
+let tt;
+function showToast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2800);}
+
+// Init
+refreshHeader();refreshAttend();
+</script>
+</body>
+</html>
