@@ -6,6 +6,37 @@
 <title>GuardAttend – Digital Attendance</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC20NofIEL8XO02m4_fog3eobh-wXFnyhE",
+  authDomain: "gaurd-attendence.firebaseapp.com",
+  databaseURL: "https://gaurd-attendence-default-rtdb.firebaseio.com",
+  projectId: "gaurd-attendence",
+  storageBucket: "gaurd-attendence.firebasestorage.app",
+  messagingSenderId: "247133420141",
+  appId: "1:247133420141:web:2d6e89e8dda57554841d64",
+  measurementId: "G-8WGNB50B5Z"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// Expose Firebase helpers to global scope for use in regular JS below
+window._fb = {
+  setData:  (path, val) => set(ref(db, path), val),
+  getData:  (path)      => get(ref(db, path)).then(s => s.val()),
+  listen:   (path, cb)  => onValue(ref(db, path), s => cb(s.val())),
+  delData:  (path)      => remove(ref(db, path)),
+};
+
+window._fbReady = true;
+document.dispatchEvent(new Event('fbReady'));
+</script>
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -16,7 +47,16 @@
   --radius:18px;--shadow:0 4px 20px rgba(13,27,42,0.08);
 }
 html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
-.shell{max-width:430px;min-height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;position:relative}
+.shell{max-width:430px;min-height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column}
+
+/* LOADER */
+.loader-screen{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.4s}
+.loader-screen.hide{opacity:0;pointer-events:none}
+.loader-logo{font-family:'Sora',sans-serif;font-size:28px;font-weight:800;color:#fff;margin-bottom:12px}
+.loader-sub{font-size:13px;color:#94A3B8;margin-bottom:30px}
+.loader-bar{width:200px;height:4px;background:#1B2E45;border-radius:4px;overflow:hidden}
+.loader-fill{height:100%;background:var(--teal);border-radius:4px;animation:loadFill 1.8s ease forwards}
+@keyframes loadFill{from{width:0}to{width:100%}}
 
 /* HEADER */
 .header{background:linear-gradient(150deg,var(--navy) 0%,var(--navy3) 100%);padding:50px 20px 28px;position:relative;overflow:hidden}
@@ -25,6 +65,10 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 .header-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
 .app-brand{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:var(--white)}
 .app-sub{font-size:12px;color:#94A3B8;margin-top:3px}
+.fb-status{display:flex;align-items:center;gap:5px;margin-top:5px}
+.fb-dot{width:7px;height:7px;border-radius:50%;background:#CBD5E1}
+.fb-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green)}
+.fb-lbl{font-size:10px;color:#94A3B8;font-weight:600}
 .date-big{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--white);text-align:right}
 .date-small{font-size:11px;color:#64748B;margin-top:2px;text-align:right}
 .profile-card{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px 16px;margin-top:18px;display:flex;align-items:center;gap:14px;position:relative;z-index:1;cursor:pointer;transition:background 0.2s}
@@ -32,7 +76,8 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 .profile-avatar{width:52px;height:52px;border-radius:14px;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:18px;font-weight:800;color:var(--teal);border:2px solid var(--teal);flex-shrink:0}
 .profile-name{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile-site{font-size:12px;color:#94A3B8;margin-top:2px}
-.profile-salary{font-size:11px;color:var(--teal);margin-top:3px;font-weight:600}
+.profile-phone{font-size:11px;color:#60A5FA;margin-top:2px;font-weight:600}
+.profile-salary{font-size:11px;color:var(--teal);margin-top:2px;font-weight:600}
 .switch-btn{font-size:11px;color:var(--teal);background:rgba(11,164,164,0.15);border:1px solid rgba(11,164,164,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap;font-family:'Nunito',sans-serif;font-weight:700}
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;position:relative;z-index:1}
 .stat-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 8px;text-align:center}
@@ -80,14 +125,15 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 .mark-btn:hover{opacity:0.9}
 .mark-btn:disabled{opacity:0.5;cursor:not-allowed}
 
-/* TODAY LOG */
+/* LOG */
 .log-wrap{padding:16px}
 .log-card{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;animation:slideUp 0.3s ease}
 @keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .log-avatar{width:44px;height:44px;border-radius:12px;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0}
 .log-name{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
 .log-meta{font-size:11px;color:var(--text2);margin-top:2px}
-.log-loc{font-size:11px;color:#0369A1;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.log-phone{font-size:11px;color:#3B82F6;margin-top:2px;font-weight:600}
+.log-loc{font-size:11px;color:#0369A1;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
 .log-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
 .badge-present{background:#DCFCE7;color:#166534}
 .badge-absent{background:#F1F5F9;color:#64748B}
@@ -100,7 +146,8 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 .sel{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--text);outline:none;background:var(--white);margin-bottom:12px}
 .sel:focus{border-color:var(--teal)}
 .salary-card{background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border-radius:var(--radius);padding:20px;margin-bottom:14px;color:var(--white)}
-.sg-name{font-family:'Sora',sans-serif;font-size:16px;font-weight:800;margin-bottom:3px}
+.sg-name{font-family:'Sora',sans-serif;font-size:17px;font-weight:800;margin-bottom:2px}
+.sg-phone{font-size:12px;color:#60A5FA;margin-bottom:2px;font-weight:600}
 .sg-period{font-size:12px;color:#94A3B8;margin-bottom:16px}
 .sal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sal-lbl{font-size:11px;color:#94A3B8;font-weight:600;margin-bottom:3px}
@@ -123,9 +170,10 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 .add-btn:hover{background:#F0FDFD}
 .guard-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
 .guard-av{width:46px;height:46px;border-radius:13px;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:16px;font-weight:800;color:var(--teal);flex-shrink:0}
-.guard-name{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
-.guard-site{font-size:12px;color:var(--text2);margin-top:2px}
-.guard-sal{font-size:12px;color:var(--teal);font-weight:700;margin-top:2px}
+.guard-name-txt{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.guard-phone-txt{font-size:12px;color:#3B82F6;font-weight:700;margin-top:2px}
+.guard-site-txt{font-size:12px;color:var(--text2);margin-top:1px}
+.guard-sal-txt{font-size:12px;color:var(--teal);font-weight:700;margin-top:1px}
 .ga-btns{display:flex;gap:6px;flex-shrink:0}
 .btn-sm{padding:6px 9px;border-radius:10px;border:none;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer}
 .btn-sel{background:#DCFCE7;color:#166534}
@@ -162,14 +210,25 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 </style>
 </head>
 <body>
-<div class="shell">
 
+<!-- LOADER -->
+<div class="loader-screen" id="loader">
+  <div class="loader-logo">🛡️ GuardAttend</div>
+  <div class="loader-sub">Connecting to Firebase…</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<div class="shell">
 <!-- HEADER -->
 <div class="header">
   <div class="header-top">
     <div>
       <div class="app-brand">🛡️ GuardAttend</div>
       <div class="app-sub">Digital Attendance Register</div>
+      <div class="fb-status">
+        <div class="fb-dot" id="fbDot"></div>
+        <span class="fb-lbl" id="fbLbl">Connecting…</span>
+      </div>
     </div>
     <div>
       <div class="date-big" id="clockDisplay">--:--</div>
@@ -180,6 +239,7 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
     <div class="profile-avatar" id="hAvatar">--</div>
     <div style="flex:1;min-width:0">
       <div class="profile-name" id="hName">Select Guard</div>
+      <div class="profile-phone" id="hPhone"></div>
       <div class="profile-site" id="hSite">Tap to select a guard</div>
       <div class="profile-salary" id="hSalary"></div>
     </div>
@@ -216,7 +276,7 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
         <span class="loc-text" id="locTxt">Location not captured</span>
         <button class="loc-btn" onclick="getLocation()">Get GPS 🔄</button>
       </div>
-      <div class="selfie-area" id="selfieArea">
+      <div class="selfie-area">
         <div class="selfie-placeholder" id="sPlaceholder" onclick="startCamera()">
           <div class="sicon">🤳</div>
           <div class="slbl">Tap to take Selfie</div>
@@ -247,7 +307,6 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
   <div id="pReport" style="display:none" class="report-wrap">
     <div class="rf-row">
       <button class="rf-btn active" id="rfG" onclick="setRF('guard')">By Guard</button>
-      <button class="rf-btn" id="rfM" onclick="setRF('month')">All Guards</button>
     </div>
     <select class="sel" id="rMonth" onchange="renderReport()"></select>
     <select class="sel" id="rGuard" onchange="renderReport()"></select>
@@ -262,7 +321,7 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
   </div>
 
 </div>
-</div><!-- /shell -->
+</div>
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
@@ -280,7 +339,7 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
       <button class="mclose" onclick="closeGModal()">✕</button>
     </div>
     <div class="fld"><label class="flbl">Full Name *</label><input class="finput" id="gName" placeholder="Guard's full name"/></div>
-    <div class="fld"><label class="flbl">Phone Number</label><input class="finput" id="gPhone" placeholder="e.g. 9876543210" type="tel"/></div>
+    <div class="fld"><label class="flbl">📞 Phone Number *</label><input class="finput" id="gPhone" placeholder="e.g. 9876543210" type="tel"/></div>
     <div class="fld"><label class="flbl">Site / Post Location *</label><input class="finput" id="gSite" placeholder="e.g. Sunrise CHS Gate 1, Andheri"/></div>
     <div class="fld"><label class="flbl">Monthly Salary (₹) *</label><input class="finput" id="gSalary" placeholder="e.g. 12000" type="number"/></div>
     <div class="fld"><label class="flbl">Employee ID</label><input class="finput" id="gEmpId" placeholder="e.g. GRD-001"/></div>
@@ -291,33 +350,77 @@ html,body{min-height:100%;background:var(--bg);font-family:'Nunito',sans-serif;c
 <div class="toast" id="toast"></div>
 
 <script>
-const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+// ── STATE ──
+let guards     = [];
+let attendance = {};
+let activeGId  = localStorage.getItem('ga3_active') || null;
+let capturedSelfie = null, capturedLoc = '', capturedLat = null, capturedLng = null;
+let editingGId = null, cameraStream = null;
+let fbReady    = false;
 
-let guards=LS.get('ga2_guards')||[];
-let attendance=LS.get('ga2_att')||{};
-let activeGId=LS.get('ga2_active')||null;
-let capturedSelfie=null,capturedLoc='',capturedLat=null,capturedLng=null;
-let editingGId=null,cameraStream=null;
+// ── FIREBASE HELPERS ──
+async function fbSet(path, val)  { if(fbReady) return window._fb.setData(path, val); }
+async function fbGet(path)       { if(fbReady) return window._fb.getData(path); return null; }
+function fbListen(path, cb)      { if(fbReady) window._fb.listen(path, cb); }
+async function fbDel(path)       { if(fbReady) return window._fb.delData(path); }
 
-// Seed demo data
-if(!guards.length){
-  guards=[
-    {id:'g1',name:'Ramesh Patil',phone:'9876543210',site:'Sunrise CHS – Andheri W',salary:12000,empId:'GRD-001'},
-    {id:'g2',name:'Suresh Jadhav',phone:'9823456789',site:'Greenpark Society – Thane',salary:13500,empId:'GRD-002'},
-    {id:'g3',name:'Dinesh Sharma',phone:'9011223344',site:'BlueBell Apts – Borivali',salary:11500,empId:'GRD-003'},
+// ── INIT ON FIREBASE READY ──
+document.addEventListener('fbReady', async () => {
+  fbReady = true;
+  document.getElementById('fbDot').classList.add('connected');
+  document.getElementById('fbLbl').textContent = 'Firebase Connected ✅';
+  setTimeout(()=>document.getElementById('loader').classList.add('hide'), 1800);
+
+  // Listen to guards in real-time
+  fbListen('guards', data => {
+    guards = data ? Object.values(data) : [];
+    if(!guards.length) seedDemoGuards();
+    refreshHeader();
+    refreshAttend();
+    if(document.getElementById('pGuards').style.display !== 'none') renderGuards();
+    if(document.getElementById('pLog').style.display !== 'none') renderLog();
+  });
+
+  // Listen to attendance in real-time
+  fbListen('attendance', data => {
+    attendance = data || {};
+    refreshHeader();
+    if(document.getElementById('pLog').style.display !== 'none') renderLog();
+  });
+});
+
+// Fallback if Firebase takes too long
+setTimeout(() => {
+  if(!fbReady) {
+    document.getElementById('fbLbl').textContent = 'Offline Mode';
+    document.getElementById('loader').classList.add('hide');
+    guards = JSON.parse(localStorage.getItem('ga3_guards') || '[]');
+    attendance = JSON.parse(localStorage.getItem('ga3_att') || '{}');
+    if(!guards.length) seedDemoGuards();
+    refreshHeader(); refreshAttend();
+  }
+}, 4000);
+
+async function seedDemoGuards() {
+  const demos = [
+    {id:'g1',name:'Ramesh Patil',   phone:'9876543210', site:'Sunrise CHS – Andheri W',   salary:12000, empId:'GRD-001'},
+    {id:'g2',name:'Suresh Jadhav',  phone:'9823456789', site:'Greenpark Society – Thane',  salary:13500, empId:'GRD-002'},
+    {id:'g3',name:'Dinesh Sharma',  phone:'9011223344', site:'BlueBell Apts – Borivali',   salary:11500, empId:'GRD-003'},
   ];
-  LS.set('ga2_guards',guards);
-  activeGId='g1'; LS.set('ga2_active',activeGId);
+  for(const g of demos) await fbSet('guards/'+g.id, g);
+  if(!activeGId){ activeGId='g1'; localStorage.setItem('ga3_active','g1'); }
+  // Seed demo attendance
   const now=new Date(),yr=now.getFullYear(),mo=now.getMonth();
   for(let d=1;d<now.getDate();d++){
     const dt=new Date(yr,mo,d).toISOString().split('T')[0];
-    if(!attendance[dt])attendance[dt]={};
-    guards.forEach(g=>{if(Math.random()>0.15)attendance[dt][g.id]={status:'present',time:'0'+(8+Math.floor(Math.random()*2))+':'+String(Math.floor(Math.random()*50)+5).padStart(2,'0')+' AM',loc:'Mumbai, Maharashtra',selfie:null,colleague:''};});
+    for(const g of demos){
+      if(Math.random()>0.15)
+        await fbSet(`attendance/${dt}/${g.id}`,{status:'present',time:'09:'+String(5+Math.floor(Math.random()*30)).padStart(2,'0')+' AM',loc:'Mumbai, Maharashtra',selfie:null,colleague:''});
+    }
   }
-  LS.set('ga2_att',attendance);
 }
 
-// Clock
+// ── CLOCK ──
 function tick(){
   const n=new Date();
   document.getElementById('clockDisplay').textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -325,35 +428,47 @@ function tick(){
 }
 tick(); setInterval(tick,1000);
 
-function daysInMonth(yr,mo){return new Date(yr,mo+1,0).getDate();}
-function getAG(){return guards.find(g=>g.id===activeGId)||null;}
-function initials(n){return n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();}
+function daysInMonth(yr,mo){ return new Date(yr,mo+1,0).getDate(); }
+function getAG(){ return guards.find(g=>g.id===activeGId)||null; }
+function initials(n){ return n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase(); }
 
 function countPresent(gId,yr,mo){
-  let c=0;const days=daysInMonth(yr,mo),today=new Date();
+  let c=0; const days=daysInMonth(yr,mo), today=new Date();
   for(let d=1;d<=days;d++){
     const dt=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if(new Date(yr,mo,d)>today)break;
-    if(attendance[dt]&&attendance[dt][gId]&&attendance[dt][gId].status==='present')c++;
+    if(new Date(yr,mo,d)>today) break;
+    if(attendance[dt]&&attendance[dt][gId]&&attendance[dt][gId].status==='present') c++;
   }
   return c;
 }
 
+// ── HEADER ──
 function refreshHeader(){
   const g=getAG();
-  if(!g){document.getElementById('hAvatar').textContent='--';document.getElementById('hName').textContent='Select Guard';document.getElementById('hSite').textContent='Tap to select';document.getElementById('hSalary').textContent='';document.getElementById('sPres').textContent='0';document.getElementById('sAbs').textContent='0';document.getElementById('sEarn').textContent='₹0';return;}
+  if(!g){
+    document.getElementById('hAvatar').textContent='--';
+    document.getElementById('hName').textContent='Select Guard';
+    document.getElementById('hPhone').textContent='';
+    document.getElementById('hSite').textContent='Tap to select';
+    document.getElementById('hSalary').textContent='';
+    document.getElementById('sPres').textContent='0';
+    document.getElementById('sAbs').textContent='0';
+    document.getElementById('sEarn').textContent='₹0';
+    return;
+  }
   document.getElementById('hAvatar').textContent=initials(g.name);
   document.getElementById('hName').textContent=g.name;
-  document.getElementById('hSite').textContent=g.site;
+  document.getElementById('hPhone').textContent='📞 '+( g.phone||'—');
+  document.getElementById('hSite').textContent='📍 '+g.site;
   const n=new Date(),yr=n.getFullYear(),mo=n.getMonth(),days=daysInMonth(yr,mo);
   document.getElementById('hSalary').textContent=`₹${g.salary.toLocaleString('en-IN')}/mo  •  ₹${Math.round(g.salary/days)}/day (${days} days)`;
-  const pres=countPresent(g.id,yr,mo),elapsed=n.getDate()-1;
+  const pres=countPresent(g.id,yr,mo),elapsed=Math.max(0,n.getDate()-1);
   document.getElementById('sPres').textContent=pres;
   document.getElementById('sAbs').textContent=Math.max(0,elapsed-pres);
   document.getElementById('sEarn').textContent='₹'+Math.round((g.salary/days)*pres).toLocaleString('en-IN');
 }
 
-// Tabs
+// ── TABS ──
 const TABS={attend:{p:'pAttend',t:'t0',n:'n0'},log:{p:'pLog',t:'t1',n:'n1'},report:{p:'pReport',t:'t2',n:'n2'},guards:{p:'pGuards',t:'t3',n:'n3'}};
 function switchTab(tab){
   Object.entries(TABS).forEach(([k,v])=>{
@@ -363,14 +478,14 @@ function switchTab(tab){
     ni.classList.toggle('active',k===tab);
     const dot=ni.querySelector('.nav-dot');
     if(k===tab&&!dot){const d=document.createElement('div');d.className='nav-dot';ni.appendChild(d);}
-    if(k!==tab&&dot)dot.remove();
+    if(k!==tab&&dot) dot.remove();
   });
-  if(tab==='log')renderLog();
-  if(tab==='report')initReport();
-  if(tab==='guards')renderGuards();
+  if(tab==='log')    renderLog();
+  if(tab==='report') initReport();
+  if(tab==='guards') renderGuards();
 }
 
-// Attendance Tab
+// ── ATTENDANCE ──
 function refreshAttend(){
   const g=getAG();
   if(!g){document.getElementById('markBtn').disabled=true;return;}
@@ -383,8 +498,8 @@ function refreshAttend(){
     document.getElementById('sTime').textContent='Marked at '+rec.time;
     document.getElementById('markBtn').disabled=true;
     document.getElementById('markBtn').textContent='✅ Already Marked';
-    if(rec.loc)document.getElementById('locTxt').textContent='📍 '+rec.loc;
-    if(rec.colleague)document.getElementById('colleagueInput').value=rec.colleague;
+    if(rec.loc) document.getElementById('locTxt').textContent='📍 '+rec.loc;
+    if(rec.colleague) document.getElementById('colleagueInput').value=rec.colleague;
     if(rec.selfie){document.getElementById('selfiePreview').src=rec.selfie;document.getElementById('selfiePreview').style.display='block';document.getElementById('sPlaceholder').style.display='none';}
   }else{
     document.getElementById('sDot').className='status-dot dot-absent';
@@ -395,12 +510,12 @@ function refreshAttend(){
   }
 }
 
-// GPS
+// ── GPS ──
 function getLocation(){
   document.getElementById('locTxt').textContent='Getting location… 🔄';
   if(!navigator.geolocation){document.getElementById('locTxt').textContent='GPS not supported';return;}
   navigator.geolocation.getCurrentPosition(pos=>{
-    capturedLat=pos.coords.latitude;capturedLng=pos.coords.longitude;
+    capturedLat=pos.coords.latitude; capturedLng=pos.coords.longitude;
     capturedLoc=`Lat: ${capturedLat.toFixed(5)}, Lng: ${capturedLng.toFixed(5)}`;
     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${capturedLat}&lon=${capturedLng}&format=json`)
       .then(r=>r.json()).then(d=>{
@@ -411,22 +526,22 @@ function getLocation(){
   },()=>document.getElementById('locTxt').textContent='Location denied – please allow GPS');
 }
 
-// Camera
+// ── CAMERA ──
 function startCamera(){
   navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false})
     .then(s=>{
       cameraStream=s;
-      const v=document.getElementById('cameraStream');v.srcObject=s;v.style.display='block';
+      const v=document.getElementById('cameraStream'); v.srcObject=s; v.style.display='block';
       document.getElementById('sPlaceholder').style.display='none';
       document.getElementById('selfieActions').style.display='flex';
     }).catch(()=>showToast('⚠️ Camera access denied'));
 }
 function captureSelfie(){
   const v=document.getElementById('cameraStream');
-  const c=document.createElement('canvas');c.width=v.videoWidth||320;c.height=v.videoHeight||240;
+  const c=document.createElement('canvas'); c.width=v.videoWidth||320; c.height=v.videoHeight||240;
   c.getContext('2d').drawImage(v,0,0);
   capturedSelfie=c.toDataURL('image/jpeg',0.7);
-  const p=document.getElementById('selfiePreview');p.src=capturedSelfie;p.style.display='block';
+  const p=document.getElementById('selfiePreview'); p.src=capturedSelfie; p.style.display='block';
   v.style.display='none';
   if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
   showToast('📸 Selfie captured!');
@@ -441,22 +556,25 @@ function retakePhoto(){
   startCamera();
 }
 
-// Mark
-function markAttendance(){
+// ── MARK ATTENDANCE ──
+async function markAttendance(){
   const g=getAG();
   if(!g){showToast('⚠️ Select a guard first');switchTab('guards');return;}
   if(!capturedSelfie){showToast('⚠️ Please take a selfie first');return;}
   if(!capturedLoc){showToast('⚠️ Please capture GPS location first');return;}
   const today=new Date().toISOString().split('T')[0];
   const now=new Date();
-  if(!attendance[today])attendance[today]={};
-  attendance[today][g.id]={status:'present',time:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),loc:capturedLoc,selfie:capturedSelfie,colleague:document.getElementById('colleagueInput').value.trim(),lat:capturedLat,lng:capturedLng};
-  LS.set('ga2_att',attendance);
-  refreshHeader();refreshAttend();
-  showToast('✅ Attendance marked for '+g.name+'!');
+  const rec={status:'present',time:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),loc:capturedLoc,selfie:capturedSelfie,colleague:document.getElementById('colleagueInput').value.trim(),lat:capturedLat,lng:capturedLng,guardName:g.name,guardPhone:g.phone||''};
+  await fbSet(`attendance/${today}/${g.id}`, rec);
+  // Also save locally as fallback
+  if(!attendance[today]) attendance[today]={};
+  attendance[today][g.id]=rec;
+  localStorage.setItem('ga3_att', JSON.stringify(attendance));
+  refreshHeader(); refreshAttend();
+  showToast('✅ Attendance saved to Firebase for '+g.name+'!');
 }
 
-// Log
+// ── TODAY LOG ──
 function renderLog(){
   const today=new Date().toISOString().split('T')[0];
   const wrap=document.getElementById('logCards');
@@ -468,20 +586,18 @@ function renderLog(){
       <div class="log-avatar">${initials(g.name)}</div>
       <div style="flex:1;min-width:0">
         <div class="log-name">${g.name}</div>
-        <div class="log-meta">${g.site}${ok?' • ⏰ '+rec.time:''}</div>
-        ${ok?`<div class="log-loc">📍 ${rec.loc||'—'}${rec.colleague?' • 👥 '+rec.colleague:''}</div>`:''}
+        <div class="log-phone">📞 ${g.phone||'—'}</div>
+        <div class="log-meta">📍 ${g.site}${ok?' • ⏰ '+rec.time:''}</div>
+        ${ok?`<div class="log-loc">🌍 ${rec.loc||'—'}${rec.colleague?' • 👥 '+rec.colleague:''}</div>`:''}
       </div>
       <span class="log-badge ${ok?'badge-present':'badge-absent'}">${ok?'Present':'Absent'}</span>
     </div>`;
   }).join('');
 }
 
-// Report
-let rfMode='guard';
-function setRF(m){rfMode=m;document.getElementById('rfG').classList.toggle('active',m==='guard');document.getElementById('rfM').classList.toggle('active',m==='month');renderReport();}
-
+// ── REPORTS ──
 function initReport(){
-  const mSel=document.getElementById('rMonth'),gSel=document.getElementById('rGuard');
+  const mSel=document.getElementById('rMonth'), gSel=document.getElementById('rGuard');
   const now=new Date();
   mSel.innerHTML='';
   for(let i=0;i<6;i++){
@@ -489,16 +605,15 @@ function initReport(){
     const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
     mSel.innerHTML+=`<option value="${val}" ${i===0?'selected':''}>${d.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</option>`;
   }
-  gSel.innerHTML=guards.map(g=>`<option value="${g.id}">${g.name} – ${g.site}</option>`).join('');
-  if(activeGId)gSel.value=activeGId;
+  gSel.innerHTML=guards.map(g=>`<option value="${g.id}">${g.name} – 📞${g.phone||'—'}</option>`).join('');
+  if(activeGId) gSel.value=activeGId;
   renderReport();
 }
 
 function renderReport(){
   const mVal=document.getElementById('rMonth').value;
-  if(!mVal)return;
-  const [yr,mo]=mVal.split('-').map(Number),moIdx=mo-1;
-  const days=daysInMonth(yr,moIdx);
+  if(!mVal) return;
+  const [yr,mo]=mVal.split('-').map(Number), moIdx=mo-1, days=daysInMonth(yr,moIdx);
   const gId=document.getElementById('rGuard').value;
   const g=guards.find(x=>x.id===gId);
   if(!g){document.getElementById('rContent').innerHTML='<div class="empty"><div class="ei">👮</div>Select a guard</div>';return;}
@@ -507,21 +622,21 @@ function renderReport(){
   const firstDay=new Date(yr,moIdx,1).getDay();
   let cells='';
   ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>cells+=`<div class="cal-dh">${d}</div>`);
-  for(let i=0;i<firstDay;i++)cells+=`<div class="cal-d"></div>`;
+  for(let i=0;i<firstDay;i++) cells+=`<div class="cal-d"></div>`;
   const todayStr=new Date().toISOString().split('T')[0];
   for(let d=1;d<=days;d++){
     const dt=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const ok=attendance[dt]&&attendance[dt][gId]&&attendance[dt][gId].status==='present';
-    if(ok)pres++;
-    const isToday=dt===todayStr;
-    cells+=`<div class="cal-d ${ok?'cal-present':'cal-absent'} ${isToday?'cal-today':''}">${d}</div>`;
+    if(ok) pres++;
+    cells+=`<div class="cal-d ${ok?'cal-present':'cal-absent'} ${dt===todayStr?'cal-today':''}">${d}</div>`;
   }
-  const absent=days-pres,earned=Math.round(daily*pres),ded=Math.round(daily*absent);
+  const absent=days-pres, earned=Math.round(daily*pres), ded=Math.round(daily*absent);
   const mName=new Date(yr,moIdx,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
   document.getElementById('rContent').innerHTML=`
     <div class="salary-card">
       <div class="sg-name">👮 ${g.name}</div>
-      <div class="sg-period">${g.site} • ${mName} (${days} calendar days)</div>
+      <div class="sg-phone">📞 ${g.phone||'—'}  •  ID: ${g.empId||'—'}</div>
+      <div class="sg-period">📍 ${g.site} • ${mName} (${days} calendar days)</div>
       <div class="sal-grid">
         <div><div class="sal-lbl">Monthly Salary</div><div class="sal-val cv-white">₹${g.salary.toLocaleString('en-IN')}</div></div>
         <div><div class="sal-lbl">Daily Wage</div><div class="sal-val cv-teal">₹${Math.round(daily)}/day</div></div>
@@ -532,92 +647,112 @@ function renderReport(){
       </div>
     </div>
     <div class="cal-wrap">
-      <div class="cal-title">📅 Attendance Calendar – ${mName}</div>
+      <div class="cal-title">📅 ${mName}</div>
       <div class="cal-grid">${cells}</div>
       <div style="display:flex;gap:12px;margin-top:12px;font-size:11px;font-weight:700">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#DCFCE7;border-radius:4px;display:inline-block"></span> Present</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#F1F5F9;border-radius:4px;display:inline-block"></span> Absent</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#DCFCE7;border-radius:4px;display:inline-block"></span>Present</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#F1F5F9;border-radius:4px;display:inline-block"></span>Absent</span>
       </div>
     </div>`;
 }
 
-// PDF
+// ── PDF ──
 function downloadPDF(){
   const {jsPDF}=window.jspdf;
   const mVal=document.getElementById('rMonth').value;
   if(!mVal){showToast('⚠️ Select a month first');return;}
-  const [yr,mo]=mVal.split('-').map(Number),moIdx=mo-1,days=daysInMonth(yr,moIdx);
-  const gId=document.getElementById('rGuard').value,g=guards.find(x=>x.id===gId);
+  const [yr,mo]=mVal.split('-').map(Number), moIdx=mo-1, days=daysInMonth(yr,moIdx);
+  const gId=document.getElementById('rGuard').value, g=guards.find(x=>x.id===gId);
   if(!g){showToast('⚠️ Select a guard first');return;}
-  const daily=g.salary/days;let pres=0;
+  const daily=g.salary/days; let pres=0;
   const rows=[];
   for(let d=1;d<=days;d++){
     const dt=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const rec=attendance[dt]&&attendance[dt][gId];
     const ok=rec&&rec.status==='present';
-    if(ok)pres++;
+    if(ok) pres++;
     rows.push({dt:new Date(yr,moIdx,d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'}),ok,time:ok?rec.time:'—',loc:ok?(rec.loc||'—'):'—',col:ok?(rec.colleague||'—'):'—'});
   }
-  const absent=days-pres,earned=Math.round(daily*pres),ded=Math.round(daily*absent);
+  const absent=days-pres, earned=Math.round(daily*pres), ded=Math.round(daily*absent);
   const mName=new Date(yr,moIdx,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const W=210;
-  // Header band
-  doc.setFillColor(13,27,42);doc.rect(0,0,W,42,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(18);doc.setFont('helvetica','bold');
-  doc.text('🛡️ GuardAttend – Attendance Report',W/2,13,{align:'center'});
-  doc.setFontSize(11);doc.setFont('helvetica','normal');
-  doc.text(`${g.name}   •   ${g.site}`,W/2,22,{align:'center'});
-  doc.text(`${mName}   |   Emp ID: ${g.empId||'—'}   |   📞 ${g.phone||'—'}`,W/2,30,{align:'center'});
-  doc.setTextColor(11,164,164);doc.setFontSize(9);
-  doc.text(`Daily Wage = Monthly Salary ÷ ${days} calendar days = ₹${Math.round(daily)}/day`,W/2,38,{align:'center'});
-  // Summary boxes
+
+  // ── Header Band ──
+  doc.setFillColor(13,27,42); doc.rect(0,0,W,50,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(18); doc.setFont('helvetica','bold');
+  doc.text('GuardAttend – Attendance Report',W/2,12,{align:'center'});
+
+  // Guard Name & Phone prominently
+  doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.setTextColor(11,196,196);
+  doc.text(g.name,W/2,21,{align:'center'});
+  doc.setFontSize(11); doc.setFont('helvetica','normal');
+  doc.setTextColor(96,165,250);
+  doc.text('Phone: '+(g.phone||'—')+'   |   Emp ID: '+(g.empId||'—'),W/2,29,{align:'center'});
+  doc.setTextColor(148,163,184);
+  doc.text(g.site,W/2,36,{align:'center'});
+  doc.setTextColor(11,164,164); doc.setFontSize(9);
+  doc.text(`${mName}   |   Daily Wage = ₹${g.salary.toLocaleString('en-IN')} ÷ ${days} days = ₹${Math.round(daily)}/day`,W/2,44,{align:'center'});
+
+  // ── Summary Boxes ──
   const boxes=[
-    {l:'Monthly Salary',v:'₹'+g.salary.toLocaleString('en-IN')},
-    {l:'Days Present',v:String(pres)+'/'+days},
-    {l:'Days Absent',v:String(absent)},
-    {l:'Daily Wage',v:'₹'+Math.round(daily)},
-    {l:'Amount Earned',v:'₹'+earned.toLocaleString('en-IN')},
-    {l:'Deduction',v:'₹'+ded.toLocaleString('en-IN')},
+    {l:'Monthly Salary', v:'Rs.'+g.salary.toLocaleString('en-IN')},
+    {l:'Days Present',   v:pres+'/'+days},
+    {l:'Days Absent',    v:String(absent)},
+    {l:'Daily Wage',     v:'Rs.'+Math.round(daily)},
+    {l:'Amount Earned',  v:'Rs.'+earned.toLocaleString('en-IN')},
+    {l:'Deduction',      v:'Rs.'+ded.toLocaleString('en-IN')},
   ];
-  const bw=30,bh=16,by=46,gap=3,bx=10;
+  const bw=30,bh=16,by=54,gap=3,bx=10;
   boxes.forEach((b,i)=>{
     const x=bx+i*(bw+gap);
-    doc.setFillColor(240,244,248);doc.roundedRect(x,by,bw,bh,3,3,'F');
-    doc.setTextColor(90,113,132);doc.setFontSize(6.5);doc.setFont('helvetica','normal');
+    doc.setFillColor(240,244,248); doc.roundedRect(x,by,bw,bh,3,3,'F');
+    doc.setTextColor(90,113,132); doc.setFontSize(6.5); doc.setFont('helvetica','normal');
     doc.text(b.l,x+bw/2,by+5,{align:'center'});
-    doc.setTextColor(13,27,42);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.setTextColor(13,27,42); doc.setFontSize(9); doc.setFont('helvetica','bold');
     doc.text(b.v,x+bw/2,by+12,{align:'center'});
   });
-  // Table
-  let y=70;
-  doc.setFillColor(13,27,42);doc.rect(10,y,W-20,8,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
-  doc.text('Date',14,y+5.5);doc.text('Status',52,y+5.5);doc.text('Time In',82,y+5.5);doc.text('Location',105,y+5.5);doc.text('Colleague',165,y+5.5);
+
+  // ── Table ──
+  let y=78;
+  doc.setFillColor(13,27,42); doc.rect(10,y,W-20,8,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('Date',14,y+5.5);
+  doc.text('Status',52,y+5.5);
+  doc.text('Time In',80,y+5.5);
+  doc.text('Location',102,y+5.5);
+  doc.text('Colleague',163,y+5.5);
   y+=8;
+
   rows.forEach((r,i)=>{
     if(y>272){doc.addPage();y=15;}
-    doc.setFillColor(i%2===0?255:248,i%2===0?255:250,i%2===0?255:252);doc.rect(10,y,W-20,7,'F');
-    doc.setTextColor(13,27,42);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+    doc.setFillColor(i%2===0?255:248,i%2===0?255:250,i%2===0?255:252);
+    doc.rect(10,y,W-20,7,'F');
+    doc.setTextColor(13,27,42); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
     doc.text(r.dt,14,y+5);
-    if(r.ok){doc.setFillColor(220,252,231);doc.roundedRect(49,y+1,20,5,2,2,'F');doc.setTextColor(22,101,52);}
-    else{doc.setFillColor(241,245,249);doc.roundedRect(49,y+1,20,5,2,2,'F');doc.setTextColor(100,116,139);}
-    doc.text(r.ok?'Present':'Absent',59,y+5,{align:'center'});
+    if(r.ok){doc.setFillColor(220,252,231);doc.roundedRect(49,y+1,22,5,2,2,'F');doc.setTextColor(22,101,52);}
+    else{doc.setFillColor(241,245,249);doc.roundedRect(49,y+1,22,5,2,2,'F');doc.setTextColor(100,116,139);}
+    doc.text(r.ok?'Present':'Absent',60,y+5,{align:'center'});
     doc.setTextColor(13,27,42);
-    doc.text(r.time,82,y+5);
-    doc.text(r.loc.length>35?r.loc.slice(0,33)+'…':r.loc,105,y+5);
-    doc.text(r.col.length>18?r.col.slice(0,16)+'…':r.col,165,y+5);
+    doc.text(r.time,80,y+5);
+    doc.text(r.loc.length>35?r.loc.slice(0,33)+'…':r.loc,102,y+5);
+    doc.text(r.col.length>18?r.col.slice(0,16)+'…':r.col,163,y+5);
     y+=7;
   });
+
+  // ── Footer ──
   y+=6;
-  doc.setFillColor(13,27,42);doc.rect(10,y,W-20,10,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(8);
-  doc.text(`Generated on ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} | GuardAttend Digital Attendance`,W/2,y+6.5,{align:'center'});
+  doc.setFillColor(13,27,42); doc.rect(10,y,W-20,10,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8);
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} | GuardAttend Digital Attendance System`,W/2,y+6.5,{align:'center'});
+
   doc.save(`GuardAttend_${g.name.replace(/ /g,'_')}_${mName.replace(/ /g,'_')}.pdf`);
   showToast('📄 PDF downloaded!');
 }
 
-// Guards
+// ── GUARDS ──
 function renderGuards(){
   const wrap=document.getElementById('guardCards');
   if(!guards.length){wrap.innerHTML='<div class="empty"><div class="ei">👮</div>No guards added yet.</div>';return;}
@@ -625,9 +760,10 @@ function renderGuards(){
     <div class="guard-card">
       <div class="guard-av">${initials(g.name)}</div>
       <div style="flex:1;min-width:0">
-        <div class="guard-name">${g.name} ${g.id===activeGId?'<span style="font-size:10px;background:#DCFCE7;color:#166534;padding:2px 7px;border-radius:10px;margin-left:4px">Active</span>':''}</div>
-        <div class="guard-site">📍 ${g.site}</div>
-        <div class="guard-sal">₹${g.salary.toLocaleString('en-IN')}/mo  •  ID: ${g.empId||'—'}  •  📞 ${g.phone||'—'}</div>
+        <div class="guard-name-txt">${g.name} ${g.id===activeGId?'<span style="font-size:10px;background:#DCFCE7;color:#166534;padding:2px 7px;border-radius:10px;margin-left:4px">Active</span>':''}</div>
+        <div class="guard-phone-txt">📞 ${g.phone||'—'}</div>
+        <div class="guard-site-txt">📍 ${g.site}</div>
+        <div class="guard-sal-txt">₹${g.salary.toLocaleString('en-IN')}/mo  •  ID: ${g.empId||'—'}</div>
       </div>
       <div class="ga-btns">
         <button class="btn-sm btn-sel" onclick="selGuard('${g.id}')">✅</button>
@@ -638,8 +774,8 @@ function renderGuards(){
 }
 
 function selGuard(id){
-  activeGId=id;LS.set('ga2_active',id);
-  refreshHeader();refreshAttend();renderGuards();
+  activeGId=id; localStorage.setItem('ga3_active',id);
+  refreshHeader(); refreshAttend(); renderGuards();
   showToast('👮 Switched to '+guards.find(g=>g.id===id).name);
   switchTab('attend');
 }
@@ -647,37 +783,53 @@ function selGuard(id){
 function openGModal(id=null){
   editingGId=id;
   document.getElementById('gModalTitle').textContent=id?'Edit Guard':'Add New Guard';
-  if(id){const g=guards.find(x=>x.id===id);document.getElementById('gName').value=g.name;document.getElementById('gPhone').value=g.phone||'';document.getElementById('gSite').value=g.site;document.getElementById('gSalary').value=g.salary;document.getElementById('gEmpId').value=g.empId||'';}
-  else['gName','gPhone','gSite','gSalary','gEmpId'].forEach(i=>document.getElementById(i).value='');
+  if(id){
+    const g=guards.find(x=>x.id===id);
+    document.getElementById('gName').value=g.name;
+    document.getElementById('gPhone').value=g.phone||'';
+    document.getElementById('gSite').value=g.site;
+    document.getElementById('gSalary').value=g.salary;
+    document.getElementById('gEmpId').value=g.empId||'';
+  } else ['gName','gPhone','gSite','gSalary','gEmpId'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('gModal').classList.add('open');
 }
 function closeGModal(){document.getElementById('gModal').classList.remove('open');editingGId=null;}
 
-function saveGuard(){
+async function saveGuard(){
   const name=document.getElementById('gName').value.trim();
+  const phone=document.getElementById('gPhone').value.trim();
   const site=document.getElementById('gSite').value.trim();
   const salary=parseFloat(document.getElementById('gSalary').value);
-  if(!name||!site||!salary){showToast('⚠️ Name, Site & Salary required');return;}
-  const obj={name,phone:document.getElementById('gPhone').value.trim(),site,salary,empId:document.getElementById('gEmpId').value.trim()};
-  if(editingGId){guards=guards.map(g=>g.id===editingGId?{...g,...obj}:g);showToast('✏️ Guard updated!');}
-  else{guards.push({id:'g'+Date.now(),...obj});showToast('✅ Guard added!');}
-  LS.set('ga2_guards',guards);closeGModal();renderGuards();refreshHeader();
+  if(!name||!phone||!site||!salary){showToast('⚠️ Name, Phone, Site & Salary required');return;}
+  const obj={name,phone,site,salary,empId:document.getElementById('gEmpId').value.trim()};
+  if(editingGId){
+    await fbSet('guards/'+editingGId, {...guards.find(g=>g.id===editingGId),...obj});
+    showToast('✏️ Guard updated in Firebase!');
+  } else {
+    const id='g'+Date.now();
+    await fbSet('guards/'+id, {id,...obj});
+    showToast('✅ Guard saved to Firebase!');
+  }
+  localStorage.setItem('ga3_guards', JSON.stringify(guards));
+  closeGModal();
 }
 
-function delGuard(id){
-  if(!confirm('Delete this guard?'))return;
-  guards=guards.filter(g=>g.id!==id);
-  LS.set('ga2_guards',guards);
-  if(activeGId===id){activeGId=guards[0]?.id||null;LS.set('ga2_active',activeGId);}
-  renderGuards();refreshHeader();showToast('🗑️ Guard removed');
+async function delGuard(id){
+  if(!confirm('Delete this guard from Firebase?')) return;
+  await fbDel('guards/'+id);
+  if(activeGId===id){activeGId=guards.find(g=>g.id!==id)?.id||null;localStorage.setItem('ga3_active',activeGId||'');}
+  showToast('🗑️ Guard removed from Firebase');
 }
 
-// Toast
+// ── TOAST ──
 let tt;
-function showToast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2800);}
+function showToast(msg){
+  const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2800);
+}
 
 // Init
-refreshHeader();refreshAttend();
+refreshHeader(); refreshAttend();
 </script>
 </body>
 </html>
